@@ -1,9 +1,8 @@
 'use client'
 
-import { useRef, useMemo } from 'react'
+import { useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { Points } from 'three'
-import * as THREE from 'three'
+import { Mesh, Group } from 'three'
 
 interface FireParticlesProps {
   position: [number, number, number]
@@ -11,98 +10,147 @@ interface FireParticlesProps {
 }
 
 export default function FireParticles({ position, rotation }: FireParticlesProps) {
-  const pointsRef = useRef<Points>(null)
+  const groupRef = useRef<Group>(null)
+  const flame1Ref = useRef<Mesh>(null)
+  const flame2Ref = useRef<Mesh>(null)
+  const flame3Ref = useRef<Mesh>(null)
+  const smokeRef = useRef<Mesh>(null)
   
-  // Création des particules
-  const particles = useMemo(() => {
-    const count = 100
-    const positions = new Float32Array(count * 3)
-    const colors = new Float32Array(count * 3)
-    const sizes = new Float32Array(count)
+  // Animation simple et stable
+  useFrame((state) => {
+    if (!groupRef.current) return
     
-    for (let i = 0; i < count; i++) {
-      const i3 = i * 3
-      
-      // Positions initiales (en forme de cône depuis la bouche du dragon)
-      positions[i3] = (Math.random() - 0.5) * 0.5
-      positions[i3 + 1] = Math.random() * 0.5
-      positions[i3 + 2] = -Math.random() * 3
-      
-      // Couleurs (rouge-orange-jaune)
-      const heat = Math.random()
-      colors[i3] = 1 // Rouge
-      colors[i3 + 1] = heat * 0.8 // Vert
-      colors[i3 + 2] = heat * 0.2 // Bleu
-      
-      // Tailles
-      sizes[i] = Math.random() * 0.3 + 0.1
+    const time = state.clock.elapsedTime * 3
+    
+    // Animation des flammes principales
+    if (flame1Ref.current) {
+      flame1Ref.current.scale.y = 1 + Math.sin(time) * 0.3
+      flame1Ref.current.scale.x = 0.8 + Math.sin(time * 1.5) * 0.2
+      flame1Ref.current.position.y = 0.5 + Math.sin(time * 2) * 0.1
     }
     
-    return { positions, colors, sizes, count }
-  }, [])
-  
-  // Animation des particules
-  useFrame((state, delta) => {
-    if (!pointsRef.current) return
-    
-    const positions = pointsRef.current.geometry.attributes.position.array as Float32Array
-    const colors = pointsRef.current.geometry.attributes.color.array as Float32Array
-    
-    for (let i = 0; i < particles.count; i++) {
-      const i3 = i * 3
-      
-      // Mouvement vers l'avant avec dispersion
-      positions[i3] += (Math.random() - 0.5) * delta * 2
-      positions[i3 + 1] += Math.random() * delta * 5
-      positions[i3 + 2] -= delta * 8
-      
-      // Réinitialiser les particules qui sont trop loin
-      if (positions[i3 + 2] < -5) {
-        positions[i3] = (Math.random() - 0.5) * 0.5
-        positions[i3 + 1] = Math.random() * 0.5
-        positions[i3 + 2] = 0
-      }
-      
-      // Faire disparaître les particules progressivement
-      const distance = Math.abs(positions[i3 + 2])
-      const alpha = Math.max(0, 1 - distance / 5)
-      colors[i3] = alpha
-      colors[i3 + 1] = alpha * Math.random() * 0.8
-      colors[i3 + 2] = alpha * Math.random() * 0.2
+    if (flame2Ref.current) {
+      flame2Ref.current.scale.y = 1 + Math.sin(time + 1) * 0.4
+      flame2Ref.current.scale.x = 0.6 + Math.sin(time * 1.2 + 1) * 0.2
+      flame2Ref.current.position.y = 0.8 + Math.sin(time * 2.5 + 1) * 0.1
     }
     
-    pointsRef.current.geometry.attributes.position.needsUpdate = true
-    pointsRef.current.geometry.attributes.color.needsUpdate = true
+    if (flame3Ref.current) {
+      flame3Ref.current.scale.y = 1 + Math.sin(time + 2) * 0.3
+      flame3Ref.current.scale.x = 0.4 + Math.sin(time * 1.8 + 2) * 0.15
+      flame3Ref.current.position.y = 1.1 + Math.sin(time * 3 + 2) * 0.08
+    }
+    
+    // Animation de la fumée
+    if (smokeRef.current) {
+      smokeRef.current.scale.x = 1.2 + Math.sin(time * 0.5) * 0.3
+      smokeRef.current.scale.z = 1.2 + Math.sin(time * 0.7) * 0.3
+      smokeRef.current.position.y = 1.5 + Math.sin(time * 0.8) * 0.2
+      smokeRef.current.rotation.y = time * 0.2
+    }
+    
+    // Rotation générale du feu
+    groupRef.current.rotation.y = Math.sin(time * 0.3) * 0.1
   })
-  
+
   return (
-    <points 
-      ref={pointsRef} 
-      position={position}
-      rotation={[0, rotation, 0]}
-    >
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          args={[particles.positions, 3]}
+    <group ref={groupRef} position={position} rotation={[0, rotation, 0]}>
+      {/* Flamme principale - Rouge/Orange */}
+      <mesh ref={flame1Ref} position={[0, 0.5, -1]}>
+        <sphereGeometry args={[0.3, 8, 8]} />
+        <meshStandardMaterial
+          color="#ff4400"
+          emissive="#ff2200"
+          emissiveIntensity={0.8}
+          transparent
+          opacity={0.8}
         />
-        <bufferAttribute
-          attach="attributes-color"
-          args={[particles.colors, 3]}
+      </mesh>
+      
+      {/* Flamme moyenne - Orange/Jaune */}
+      <mesh ref={flame2Ref} position={[0, 0.8, -1.2]}>
+        <sphereGeometry args={[0.25, 8, 8]} />
+        <meshStandardMaterial
+          color="#ff8800"
+          emissive="#ff6600"
+          emissiveIntensity={0.9}
+          transparent
+          opacity={0.7}
         />
-        <bufferAttribute
-          attach="attributes-size"
-          args={[particles.sizes, 1]}
+      </mesh>
+      
+      {/* Flamme haute - Jaune */}
+      <mesh ref={flame3Ref} position={[0, 1.1, -1.4]}>
+        <sphereGeometry args={[0.15, 6, 6]} />
+        <meshStandardMaterial
+          color="#ffaa00"
+          emissive="#ff8800"
+          emissiveIntensity={1}
+          transparent
+          opacity={0.6}
         />
-      </bufferGeometry>
-      <pointsMaterial
-        size={0.3}
-        sizeAttenuation={true}
-        vertexColors={true}
-        transparent={true}
-        opacity={0.8}
-        blending={THREE.AdditiveBlending}
-      />
-    </points>
+      </mesh>
+      
+      {/* Fumée */}
+      <mesh ref={smokeRef} position={[0, 1.5, -1.8]}>
+        <sphereGeometry args={[0.4, 8, 6]} />
+        <meshStandardMaterial
+          color="#444444"
+          transparent
+          opacity={0.3}
+        />
+      </mesh>
+      
+      {/* Lueur centrale */}
+      <mesh position={[0, 0.3, -0.8]}>
+        <sphereGeometry args={[0.4, 12, 8]} />
+        <meshStandardMaterial
+          color="#ff6600"
+          emissive="#ff4400"
+          emissiveIntensity={0.6}
+          transparent
+          opacity={0.4}
+        />
+      </mesh>
+      
+      {/* Étincelles fixes */}
+      <mesh position={[0.2, 0.8, -1.2]}>
+        <sphereGeometry args={[0.02]} />
+        <meshStandardMaterial
+          color="#ffcc00"
+          emissive="#ff9900"
+          emissiveIntensity={1}
+        />
+      </mesh>
+      
+      <mesh position={[-0.15, 1.2, -1.1]}>
+        <sphereGeometry args={[0.015]} />
+        <meshStandardMaterial
+          color="#ffaa00"
+          emissive="#ff7700"
+          emissiveIntensity={1}
+        />
+      </mesh>
+      
+      <mesh position={[0.1, 0.6, -0.9]}>
+        <sphereGeometry args={[0.025]} />
+        <meshStandardMaterial
+          color="#ffdd00"
+          emissive="#ffaa00"
+          emissiveIntensity={1}
+        />
+      </mesh>
+      
+      {/* Chaleur distordue (effet visuel) */}
+      <mesh position={[0, 0.7, -1.5]}>
+        <planeGeometry args={[0.8, 1.5]} />
+        <meshStandardMaterial
+          color="#ff0000"
+          transparent
+          opacity={0.1}
+          side={2}
+        />
+      </mesh>
+    </group>
   )
 } 

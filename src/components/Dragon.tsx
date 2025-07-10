@@ -1,12 +1,13 @@
 'use client'
 
 import { useRef, useState, useEffect } from 'react'
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import { Mesh, Vector3 } from 'three'
 import FireParticles from './FireParticles'
 
 export default function Dragon() {
   const dragonRef = useRef<Mesh>(null)
+  const { camera } = useThree()
   const [position, setPosition] = useState(new Vector3(0, 2, 0))
   const [rotation, setRotation] = useState(0)
   const [isJumping, setIsJumping] = useState(false)
@@ -22,13 +23,13 @@ export default function Dragon() {
       // Cracher du feu avec E
       if (event.code === 'KeyE') {
         setIsBreathingFire(true)
-        setTimeout(() => setIsBreathingFire(false), 1000) // 1 seconde de feu
+        setTimeout(() => setIsBreathingFire(false), 1500)
       }
       
       // Saut avec Espace
       if (event.code === 'Space' && !isJumping) {
         setIsJumping(true)
-        setVelocity(prev => new Vector3(prev.x, 8, prev.z))
+        setVelocity(prev => new Vector3(prev.x, 10, prev.z))
       }
     }
 
@@ -45,60 +46,60 @@ export default function Dragon() {
     }
   }, [isJumping])
 
-  // Animation et physique
+  // Animation avec contrôles adaptatifs
   useFrame((state, delta) => {
     if (!dragonRef.current) return
 
-    const speed = 5
+    const speed = 8
     const newVelocity = new Vector3(velocity.x, velocity.y, velocity.z)
-    let newRotation = rotation
     let moved = false
 
-    // Mouvement horizontal (ZQSD et flèches)
+    // Calcul des directions relatives à la caméra
+    const cameraDirection = new Vector3()
+    camera.getWorldDirection(cameraDirection)
+    cameraDirection.y = 0
+    cameraDirection.normalize()
+
+    const cameraRight = new Vector3()
+    cameraRight.crossVectors(cameraDirection, new Vector3(0, 1, 0))
+    cameraRight.normalize()
+
+    const movementVector = new Vector3(0, 0, 0)
+
+    // Mouvement adaptatif selon la caméra
     if (keys['KeyW'] || keys['KeyZ'] || keys['ArrowUp']) {
-      newVelocity.z = -speed
-      newRotation = 0
+      movementVector.add(cameraDirection)
       moved = true
     }
     if (keys['KeyS'] || keys['ArrowDown']) {
-      newVelocity.z = speed
-      newRotation = Math.PI
+      movementVector.sub(cameraDirection)
       moved = true
     }
     if (keys['KeyA'] || keys['KeyQ'] || keys['ArrowLeft']) {
-      newVelocity.x = -speed
-      newRotation = Math.PI / 2
+      movementVector.sub(cameraRight)
       moved = true
     }
     if (keys['KeyD'] || keys['ArrowRight']) {
-      newVelocity.x = speed
-      newRotation = -Math.PI / 2
+      movementVector.add(cameraRight)
       moved = true
     }
 
-    // Mouvements diagonaux
-    if ((keys['KeyW'] || keys['KeyZ'] || keys['ArrowUp']) && (keys['KeyA'] || keys['KeyQ'] || keys['ArrowLeft'])) {
-      newRotation = Math.PI / 4
-    }
-    if ((keys['KeyW'] || keys['KeyZ'] || keys['ArrowUp']) && (keys['KeyD'] || keys['ArrowRight'])) {
-      newRotation = -Math.PI / 4
-    }
-    if ((keys['KeyS'] || keys['ArrowDown']) && (keys['KeyA'] || keys['KeyQ'] || keys['ArrowLeft'])) {
-      newRotation = 3 * Math.PI / 4
-    }
-    if ((keys['KeyS'] || keys['ArrowDown']) && (keys['KeyD'] || keys['ArrowRight'])) {
-      newRotation = -3 * Math.PI / 4
-    }
-
-    // Si aucun mouvement horizontal, arrêter
-    if (!moved) {
+    // Appliquer le mouvement
+    if (moved) {
+      movementVector.normalize()
+      newVelocity.x = movementVector.x * speed
+      newVelocity.z = movementVector.z * speed
+      
+      const targetRotation = Math.atan2(-movementVector.x, -movementVector.z)
+      setRotation(targetRotation)
+    } else {
       newVelocity.x = 0
       newVelocity.z = 0
     }
 
     // Gravité
     if (position.y > 2 || newVelocity.y > 0) {
-      newVelocity.y -= 20 * delta // gravité
+      newVelocity.y -= 25 * delta
     } else {
       newVelocity.y = 0
       setIsJumping(false)
@@ -110,90 +111,87 @@ export default function Dragon() {
     newPosition.y += newVelocity.y * delta
     newPosition.z += newVelocity.z * delta
 
-    // Limites du sol
+    // Limites
     if (newPosition.y < 2) {
       newPosition.y = 2
       newVelocity.y = 0
       setIsJumping(false)
     }
 
-    // Limites de la carte
-    newPosition.x = Math.max(-20, Math.min(20, newPosition.x))
-    newPosition.z = Math.max(-20, Math.min(20, newPosition.z))
+    newPosition.x = Math.max(-30, Math.min(30, newPosition.x))
+    newPosition.z = Math.max(-30, Math.min(30, newPosition.z))
 
-    // Appliquer les changements
     setPosition(newPosition)
     setVelocity(newVelocity)
-    setRotation(newRotation)
 
     // Appliquer à l'objet 3D
     dragonRef.current.position.copy(newPosition)
-    dragonRef.current.rotation.y = newRotation
+    dragonRef.current.rotation.y = rotation
 
     // Animation de vol
-    dragonRef.current.position.y += Math.sin(state.clock.elapsedTime * 2) * 0.1
+    const time = state.clock.elapsedTime
+    dragonRef.current.position.y += Math.sin(time * 3) * 0.1
   })
 
   return (
     <group>
-      {/* Corps du dragon */}
+      {/* Dragon amélioré mais stable */}
       <mesh ref={dragonRef} castShadow receiveShadow>
-        {/* Corps principal */}
         <group>
-          {/* Corps */}
+          {/* Corps principal */}
           <mesh position={[0, 0, 0]}>
-            <boxGeometry args={[1.5, 1, 3]} />
-            <meshStandardMaterial color="#4a5c4a" />
+            <sphereGeometry args={[1.2, 16, 12]} />
+            <meshStandardMaterial color="#2d4a2d" roughness={0.8} />
           </mesh>
           
           {/* Tête */}
-          <mesh position={[0, 0.5, -2]}>
-            <boxGeometry args={[1.2, 1.2, 1.5]} />
-            <meshStandardMaterial color="#5a6c5a" />
+          <mesh position={[0, 0.3, -2]}>
+            <sphereGeometry args={[0.8, 12, 10]} />
+            <meshStandardMaterial color="#3d5a3d" roughness={0.7} />
           </mesh>
           
           {/* Yeux */}
-          <mesh position={[-0.3, 0.7, -2.5]}>
-            <sphereGeometry args={[0.15]} />
-            <meshStandardMaterial color="#ff0000" emissive="#ff0000" emissiveIntensity={0.5} />
+          <mesh position={[-0.3, 0.4, -2.5]}>
+            <sphereGeometry args={[0.15, 8, 6]} />
+            <meshStandardMaterial color="#ff3300" emissive="#ff1100" emissiveIntensity={0.6} />
           </mesh>
-          <mesh position={[0.3, 0.7, -2.5]}>
-            <sphereGeometry args={[0.15]} />
-            <meshStandardMaterial color="#ff0000" emissive="#ff0000" emissiveIntensity={0.5} />
-          </mesh>
-          
-          {/* Queue */}
-          <mesh position={[0, 0, 2]}>
-            <boxGeometry args={[0.8, 0.8, 2]} />
-            <meshStandardMaterial color="#3a4c3a" />
+          <mesh position={[0.3, 0.4, -2.5]}>
+            <sphereGeometry args={[0.15, 8, 6]} />
+            <meshStandardMaterial color="#ff3300" emissive="#ff1100" emissiveIntensity={0.6} />
           </mesh>
           
           {/* Ailes */}
           <mesh position={[-1.5, 0.5, 0]} rotation={[0, 0, -0.3]}>
-            <boxGeometry args={[2, 0.1, 2]} />
-            <meshStandardMaterial color="#2a3c2a" />
+            <planeGeometry args={[2.5, 2]} />
+            <meshStandardMaterial color="#1a2a1a" transparent opacity={0.9} side={2} />
           </mesh>
           <mesh position={[1.5, 0.5, 0]} rotation={[0, 0, 0.3]}>
-            <boxGeometry args={[2, 0.1, 2]} />
-            <meshStandardMaterial color="#2a3c2a" />
+            <planeGeometry args={[2.5, 2]} />
+            <meshStandardMaterial color="#1a2a1a" transparent opacity={0.9} side={2} />
+          </mesh>
+          
+          {/* Queue */}
+          <mesh position={[0, 0, 2.5]}>
+            <cylinderGeometry args={[0.2, 0.5, 2, 8]} />
+            <meshStandardMaterial color="#1d3a1d" />
           </mesh>
           
           {/* Pattes */}
-          <mesh position={[-0.5, -0.8, -1]}>
-            <boxGeometry args={[0.3, 0.8, 0.3]} />
-            <meshStandardMaterial color="#3a4c3a" />
+          <mesh position={[-0.5, -0.8, -0.8]}>
+            <cylinderGeometry args={[0.1, 0.15, 0.8, 6]} />
+            <meshStandardMaterial color="#2d4a2d" />
           </mesh>
-          <mesh position={[0.5, -0.8, -1]}>
-            <boxGeometry args={[0.3, 0.8, 0.3]} />
-            <meshStandardMaterial color="#3a4c3a" />
+          <mesh position={[0.5, -0.8, -0.8]}>
+            <cylinderGeometry args={[0.1, 0.15, 0.8, 6]} />
+            <meshStandardMaterial color="#2d4a2d" />
           </mesh>
-          <mesh position={[-0.5, -0.8, 1]}>
-            <boxGeometry args={[0.3, 0.8, 0.3]} />
-            <meshStandardMaterial color="#3a4c3a" />
+          <mesh position={[-0.5, -0.8, 0.8]}>
+            <cylinderGeometry args={[0.1, 0.15, 0.8, 6]} />
+            <meshStandardMaterial color="#2d4a2d" />
           </mesh>
-          <mesh position={[0.5, -0.8, 1]}>
-            <boxGeometry args={[0.3, 0.8, 0.3]} />
-            <meshStandardMaterial color="#3a4c3a" />
+          <mesh position={[0.5, -0.8, 0.8]}>
+            <cylinderGeometry args={[0.1, 0.15, 0.8, 6]} />
+            <meshStandardMaterial color="#2d4a2d" />
           </mesh>
         </group>
       </mesh>
