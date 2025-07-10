@@ -1,36 +1,81 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🐉 Dragon 3D Contrôleur
 
-## Getting Started
+Un jeu de dragon 3D interactif créé avec Next.js et Three.js où vous pouvez contrôler un dragon qui vole et crache du feu !
 
-First, run the development server:
+## 🎮 Contrôles
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Mouvement** : `Z`, `Q`, `S`, `D` ou flèches directionnelles `←` `↑` `↓` `→`
+- **Saut** : `Espace`
+- **Cracher du feu** : `E`
+
+## 🚀 Installation et Lancement
+
+1. **Installer les dépendances :**
+   ```bash
+   npm install
+   ```
+
+2. **Lancer en développement :**
+   ```bash
+   npm run dev
+   ```
+
+3. **Ouvrir le navigateur :**
+   Allez sur [http://localhost:3000](http://localhost:3000)
+
+## 📦 Déploiement sur Vercel
+
+1. **Push sur GitHub :**
+   ```bash
+   git add .
+   git commit -m "Initial dragon 3D project"
+   git push origin main
+   ```
+
+2. **Connecter à Vercel :**
+   - Allez sur [vercel.com](https://vercel.com)
+   - Connectez votre repository GitHub
+   - Le déploiement se fera automatiquement !
+
+## 🛠️ Technologies Utilisées
+
+- **Next.js 14** - Framework React
+- **Three.js** - Moteur 3D
+- **React Three Fiber** - Integration React pour Three.js
+- **React Three Drei** - Utilitaires 3D
+- **TypeScript** - Typage statique
+- **Tailwind CSS** - Styles
+
+## 🎨 Fonctionnalités
+
+- ✅ Dragon 3D entièrement modélisé
+- ✅ Contrôles fluides (ZQSD + flèches)
+- ✅ Système de saut avec gravité
+- ✅ Effets de particules de feu
+- ✅ Environnement 3D avec arbres et rochers
+- ✅ Ombres et éclairage réaliste
+- ✅ Animation de vol du dragon
+- ✅ Interface utilisateur avec instructions
+
+## 🔧 Structure du Projet
+
+```
+src/
+├── app/
+│   └── page.tsx          # Page principale
+└── components/
+    ├── Dragon3D.tsx      # Scène 3D principale
+    ├── Dragon.tsx        # Modèle et contrôles du dragon
+    ├── FireParticles.tsx # Système de particules de feu
+    └── Ground.tsx        # Environnement (sol, arbres, rochers)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🎯 Améliorations Possibles
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Ajouter des sons d'effets
+- Créer plus d'animations pour le dragon
+- Ajouter des objectifs/missions
+- Implémenter un système de score
+- Ajouter d'autres créatures ou obstacles
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Amusez-vous bien avec votre dragon ! 🐲🔥
